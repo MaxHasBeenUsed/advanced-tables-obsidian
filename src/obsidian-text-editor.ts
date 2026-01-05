@@ -41,21 +41,24 @@ export class ObsidianTextEditor {
       return true;
     }
 
-    const table = cache.sections.find(
+    const section = cache.sections.find(
       (section): boolean =>
         section.position.start.line <= row &&
-        section.position.end.line >= row &&
-        section.type !== 'code' &&
-        section.type !== 'math',
+        section.position.end.line >= row,
     );
-    if (table === undefined) {
+
+    if (section === undefined) {
+      return true;
+    }
+
+    if (section.type === 'code' || section.type === 'math') {
       return false;
     }
 
     // Check that the text `-tx-` is not on the line immediately preceeding the
     // table found in the previous check.
     // https://github.com/tgrosinger/advanced-tables-obsidian/issues/133
-    const preceedingLineIndex = table.position.start.line;
+    const preceedingLineIndex = section.position.start.line;
     if (preceedingLineIndex >= 0) {
       const preceedingLine = this.getLine(preceedingLineIndex);
       if (preceedingLine === '-tx-') {
