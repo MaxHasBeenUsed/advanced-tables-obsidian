@@ -38,6 +38,7 @@ export class ObsidianTextEditor {
   public acceptsTableEdit = (row: number): boolean => {
     const cache = this.app.metadataCache.getFileCache(this.file);
     if (!cache.sections) {
+      console.log(`[AdvancedTables Debug] Row ${row}: No sections found in cache.`);
       return true;
     }
 
@@ -48,10 +49,14 @@ export class ObsidianTextEditor {
     );
 
     if (section === undefined) {
+      console.log(`[AdvancedTables Debug] Row ${row}: No section covers this row. Allowed.`);
       return true;
     }
 
+    console.log(`[AdvancedTables Debug] Row ${row}: Found section type '${section.type}' at lines ${section.position.start.line}-${section.position.end.line}.`);
+
     if (section.type === 'code' || section.type === 'math') {
+      console.log(`[AdvancedTables Debug] Row ${row}: Blocked due to code/math type.`);
       return false;
     }
 
@@ -62,6 +67,7 @@ export class ObsidianTextEditor {
     if (preceedingLineIndex >= 0) {
       const preceedingLine = this.getLine(preceedingLineIndex);
       if (preceedingLine === '-tx-') {
+         console.log(`[AdvancedTables Debug] Row ${row}: Blocked due to -tx- marker.`);
         return false;
       }
     }
