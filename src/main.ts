@@ -231,7 +231,7 @@ export default class TableEditorPlugin extends Plugin {
     this.addCommand({
       id: 'transpose',
       name: 'Transpose',
-       icon: 'transpose',
+      icon: 'transpose',
       editorCheckCallback: this.newPerformTableAction((te: TableEditor) => {
         te.transpose();
       }),
@@ -273,29 +273,33 @@ export default class TableEditorPlugin extends Plugin {
 
   // makeEditorExtension is used to bind Tab and Enter in the new CM6 Live Preview editor.
   private readonly makeEditorExtension = (): Extension => {
-    const keymaps: KeyBinding[] = [];
-
-    if (this.settings.bindEnter) {
-      keymaps.push({
+    // Keymaps are always registered; settings are checked at call time so
+    // that toggling bindEnter/bindTab in settings takes effect without a
+    // restart, and so that a delayed settings load can't freeze the wrong value.
+    const keymaps: KeyBinding[] = [
+      {
         key: 'Enter',
-        run: (): boolean =>
-          this.newPerformTableActionCM6((te: TableEditor) => te.nextRow())(),
+        run: (): boolean => {
+          if (!this.settings.bindEnter) return false;
+          return this.newPerformTableActionCM6((te: TableEditor) => te.nextRow())();
+        },
         preventDefault: true,
-      });
-    }
-
-    if (this.settings.bindTab) {
-      keymaps.push({
+      },
+      {
         key: 'Tab',
-        run: (): boolean =>
-          this.newPerformTableActionCM6((te: TableEditor) => te.nextCell())(),
-        shift: (): boolean =>
-          this.newPerformTableActionCM6((te: TableEditor) =>
+        run: (): boolean => {
+          if (!this.settings.bindTab) return false;
+          return this.newPerformTableActionCM6((te: TableEditor) => te.nextCell())();
+        },
+        shift: (): boolean => {
+          if (!this.settings.bindTab) return false;
+          return this.newPerformTableActionCM6((te: TableEditor) =>
             te.previousCell(),
-          )(),
+          )();
+        },
         preventDefault: true,
-      });
-    }
+      },
+    ];
 
     return Prec.highest(keymap.of(keymaps));
   };
@@ -344,7 +348,7 @@ export default class TableEditorPlugin extends Plugin {
     event: KeyboardEvent,
   ): void => {
     if (['Tab', 'Enter'].contains(event.key)) {
-      const view  = this.app.workspace.getActiveViewOfType(MarkdownView)
+      const view = this.app.workspace.getActiveViewOfType(MarkdownView)
       const editor = view ? view.editor : null;
 
       const action = this.newPerformTableAction((te: TableEditor) => {
@@ -378,6 +382,7 @@ export default class TableEditorPlugin extends Plugin {
       }, false);
 
       // Check first if we are in a table, if so, then execute.
+      if (!view || !editor) return;
       if (action(true, editor, view)) {
         action(false, editor, view);
       }

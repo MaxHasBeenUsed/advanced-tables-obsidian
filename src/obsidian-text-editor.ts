@@ -49,7 +49,10 @@ export class ObsidianTextEditor {
         section.type !== 'math',
     );
     if (table === undefined) {
-      return false;
+      // Cache may be stale after a table edit (re-indexing is async).
+      // Fall back to a line-content check: if the line starts with '|'
+      // it is almost certainly a markdown table row.
+      return /^\s*\|/.test(this.getLine(row));
     }
 
     // Check that the text `-tx-` is not on the line immediately preceeding the
