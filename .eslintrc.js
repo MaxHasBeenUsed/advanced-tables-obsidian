@@ -130,7 +130,7 @@ module.exports = {
     "prefer-object-spread": "error",
     "prefer-rest-params": "error",
     radix: "error",
-    "simple-import-sort/sort": [
+    "simple-import-sort/imports": [
       "error",
       {
         groups: [
