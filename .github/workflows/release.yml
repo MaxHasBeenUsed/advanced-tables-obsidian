@@ -1,14 +1,25 @@
 name: Release
 on:
   push:
-    tags: ["*"]
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'manifest.json'
+      - 'package.json'
+      - 'styles.css'
+      - 'esbuild.config.mjs'
+      - 'tsconfig.json'
+
 env:
   PLUGIN_NAME: table-editor-obsidian
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Install modules
         run: npm install
@@ -16,16 +27,35 @@ jobs:
       - name: Run build
         run: npm run build
 
+      - name: Run ESLint
+        run: npm run eslint
+
+      - name: Check version change
+        id: version_check
+        run: |
+          CURRENT=$(jq -r .version manifest.json)
+          PREVIOUS=$(git show HEAD~1:manifest.json 2>/dev/null | jq -r .version 2>/dev/null || echo "")
+          echo "version=$CURRENT" >> $GITHUB_OUTPUT
+          if [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Package
+        if: steps.version_check.outputs.changed == 'true'
         run: |
           mkdir ${{ env.PLUGIN_NAME }}
           cp main.js manifest.json styles.css ${{ env.PLUGIN_NAME }}
           zip -r ${{ env.PLUGIN_NAME }}.zip ${{ env.PLUGIN_NAME }}
 
       - name: Create Release
+        if: steps.version_check.outputs.changed == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          tag_name: ${{ steps.version_check.outputs.version }}
+          name: ${{ steps.version_check.outputs.version }}
+          draft: false
           prerelease: false
           files: |
             ${{ env.PLUGIN_NAME }}.zip
